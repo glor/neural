@@ -1,6 +1,11 @@
 #include<stdlib.h>
 #include<stdio.h>
 
+/* 
+ * network represents the weight networks
+ * and also the propagation network
+ */
+
 typedef struct {
 	int depth;
 	int* widths;
@@ -8,7 +13,7 @@ typedef struct {
 } network;
 
 network* make_network(int depth, int* widths) {
-	network* nw = malloc(sizeof(nw));
+	network* nw = malloc(sizeof(network));
 	nw->depth = depth;
 	nw->widths = malloc(depth*sizeof(int));
 	nw->weights = malloc((depth-1)*sizeof(double*));
@@ -21,6 +26,26 @@ network* make_network(int depth, int* widths) {
 	return nw;
 }
 
+/* 
+ * Nodes are other networks than Networks
+ */
+network* make_nodes(network* nw) {
+	network* nd = malloc(sizeof(network));
+	nd->depth = nw->depth;
+	nd->widths = malloc(nd->depth*sizeof(int));
+	nd->weights = malloc(nd->depth*sizeof(double*));
+	for(int i=0; i<nd->depth; i++) {
+		nd->widths[i] = nw->widths[i];
+	}
+	for(int i=0; i<nd->depth; i++) {
+		nd->weights[i] = malloc(nd->widths[i]*sizeof(double));
+		for(int j=0; j<nd->widths[i]; j++) {
+			nd->weights[i][j] = 0;
+		}
+	}
+	return nd;
+}
+
 double getWeight(network* nw, int layer, int from, int to) {
 	return nw->weights[layer][from*nw->widths[layer]+to];
 }
@@ -28,7 +53,7 @@ double getWeight(network* nw, int layer, int from, int to) {
 void setWeight(network* nw, int layer, int from, int to, double weight) {
 	nw->weights[layer][from*nw->widths[layer]+to] = weight;
 }
-
+/*
 void init_network(network* nw) {
 	int depth = nw->depth;
 	for(int i=0; i<depth-1; i++)
@@ -115,7 +140,7 @@ void backprop(network* nw, double* input, int index, double alpha) {
 	for(int i=depth-2; i >= 0; i--) {
 		for(int j=0; j<nw->widths[i]; j++) {
 			for(int k=0; k<nw->widths[i+1]; k++) {
-			//*values[i][j] / values[i+1][k]
+			// *values[i][j] / values[i+1][k]
 				int hj = values[i+1][k];
 				//double delta = alpha*(values2[i+1][k]-values[i+1][k])*getWeight(nw,i,j,k)*hj*values[i][j];
 				values2[i][j] += values[i][j]*getWeight(nw,i,j,k) / values[i+1][k];
@@ -158,29 +183,72 @@ void printNetwork(network* nw) {
 		
 	}
 	printf("====== END ======\n");
+}*/
+void feedforward(network* nw, double* input, double* output) {
+	int depth = nw->depth;
+	network* nd = make_nodes(nw);
+	for(int i=0; i<depth; i++) {
+		for(int j=0; j<nd->widths[i]; j++) {
+			nd->weights[i][j] = 0;
+		}
+	}
+	// copy input into working space
+	for(int i=0; i<nw->widths[0]; i++) {
+		nd->weights[0][i] = input[i];
+	}
+	
+	// evaluate levelwise
+	for(int i=0; i<depth-1; i++) {
+		for(int j=0; j<nw->widths[i]; j++) {
+			for(int k=0; k<nw->widths[i+1]; k++) {
+				nd->weights[i+1][k] += getWeight(nw,i,j,k)*nd->weights[i][j];
+			}
+		}
+	}
+	for(int i=0; i<nd->widths[depth-1]; i++) {
+		output[i] = nd->weights[nd->depth - 1][i];
+	}
 }
-
+/*
+void train(network* nw, double* goal, int count) {
+	for(int i=0; i<count; i++) {
+		
+	}
+}*/
 int main(void) {
-	int depth = 3;
-	int width[3] = {3, 3, 3};
+	int depth = 2;
+	int width[2] = {2,2};
 	network* nw = make_network(depth, width);
 	
-	/*int n = 3;
-	double weights[3][3] ={	{1,0,1},
-							{0,1,0},
-							{0,0,1}};
-	for(int i=0; i<n; i++) {
-		for(int j=0; j<n; j++) {
-			setWeight(nw,0,i,j,weights[i][j]);
-		}
-	}*/
-	init_network2(nw);
-	/*
+	
 	setWeight(nw,0,0,0,1);
 	setWeight(nw,0,0,1,0);
 	setWeight(nw,0,1,0,0);
 	setWeight(nw,0,1,1,1);
-	*/
+	double input[2];
+	double output[2];
+	scanf("%lf%lf", input, input+1);
+	feedforward(nw, input, output);
+	for(int i=0; i<nw->depth; i++) {
+		for(int j=0; j<nw->widths[i]; j++) {
+			printf("%lf ", nw->weights[i][j]);
+		}
+		printf("\n");
+	}
+}
+
+/*
+int main(void) {
+	int depth = 2;
+	int width[2] = {2,2};
+	network* nw = make_network(depth, width);
+	
+	
+	setWeight(nw,0,0,0,1);
+	setWeight(nw,0,0,1,0);
+	setWeight(nw,0,1,0,0);
+	setWeight(nw,0,1,1,1);
+	
 	setWeight(nw,1,1,0,0.5);
 	printNetwork(nw);
 	double input[3] = {9./6, 2./6, 3./6};
@@ -202,4 +270,4 @@ int main(void) {
 		printNetwork(nw);
 	}
 	
-}
+}*/
