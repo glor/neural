@@ -208,6 +208,7 @@ void feedforward(network* nw, double* input, double* output) {
 	for(int i=0; i<nd->widths[depth-1]; i++) {
 		output[i] = nd->weights[nd->depth - 1][i];
 	}
+	free()
 }
 /*
 void train(network* nw, double* goal, int count) {
